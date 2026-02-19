@@ -6,29 +6,43 @@ import streamlit as st
 from tensorflow.keras.datasets import imdb
 from tensorflow.keras.preprocessing import sequence
 from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import SimpleRNN  # needed for custom wrapper
 
 # Step 2: Load IMDB dataset word index
 word_index = imdb.get_word_index()
 reverse_word_index = {value: key for key, value in word_index.items()}
 
-# Step 3: Load the pretrained model safely
-# Use compile=False to avoid legacy optimizer/loss issues with Keras 3
-model = load_model('SimpleRNN/simple_rnn_imdb.h5', compile=False)
+# Step 3: Load the pretrained model safely (legacy fix for 'time_major')
+def simple_rnn_wrapper(*args, **kwargs):
+    """
+    Wrap SimpleRNN to ignore the legacy 'time_major' argument
+    that is no longer supported in TF 2.20+.
+    """
+    kwargs.pop('time_major', None)  # remove unsupported argument
+    return SimpleRNN(*args, **kwargs)
+
+model = load_model(
+    'SimpleRNN/simple_rnn_imdb.h5',
+    compile=False,
+    custom_objects={'SimpleRNN': simple_rnn_wrapper}
+)
+
+MAXLEN = 500  # consistent with training
 
 # Step 4: Helper Functions
-
 def decoded_review(encoded_review):
     """
     Convert encoded review back to words.
     """
     return ' '.join([reverse_word_index.get(i - 3, '?') for i in encoded_review])
 
-def preprocess_text(text, maxlen=500):
+def preprocess_text(text, maxlen=MAXLEN):
     """
     Preprocess user input text to match model input format.
     """
     words = text.lower().split()
-    encoded_review = [word_index.get(word, 2) + 3 for word in words]  # 2 = unknown word
+    # Encode words, unknown=2, offset by 3 as IMDB convention
+    encoded_review = [word_index.get(word, 2) + 3 for word in words]
     padded_review = sequence.pad_sequences([encoded_review], maxlen=maxlen)
     return padded_review
 
