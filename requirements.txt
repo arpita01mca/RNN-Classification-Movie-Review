@@ -1,3 +1,5 @@
-streamlit
-tensorflow
-numpy
+tensorflow==2.15.0
+keras==2.15.0
+h5py==3.10.0
+numpy==1.26.4
+streamlit==1.31.0
