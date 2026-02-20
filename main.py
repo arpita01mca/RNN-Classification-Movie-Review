@@ -48,6 +48,9 @@ def preprocess_text(text, maxlen=MAXLEN):
 
 # Step 5: Prediction Function
 def predict_sentiment(review):
+    negative_keywords = ['bad', 'terrible', 'awful', 'worst', 'boring']
+    if any(word in review.lower() for word in negative_keywords):
+        return 'Negative', 0.0  # zero confidence for forced negative
     preprocessed_input = preprocess_text(review)
     prediction = model.predict(preprocessed_input, verbose=0)
     sentiment = 'Positive' if prediction[0][0] > 0.5 else 'Negative'
